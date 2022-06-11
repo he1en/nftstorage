@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+        <script src="main.js" type="module"></script>
+
+    </head>
+    <body>
+        <h1>Where does your NFT live?</h1>
+        <label htmlFor="main-input">Enter an OpenSea or LooksRare link to your NFT.</label>
+        <input id="main-input"/>
+        <button id="main-button" type="button">See the truth</button>
+        <br />
+        <img id="nft-image" style="max-width:400px;width:100%" hidden=true />
+        <div id="main-output">
+            <h3 id="nft-name"></h3>
+            <h2 id="nft-location"></h2>
+            <iframe id="nft-data"></iframe>
+            <br />
+            <h3 id="nft-changeable"></h3>
+            <br />
+            <a id="nft-source" target="_blank" />
+        </div>
+    </body>
+</html>
