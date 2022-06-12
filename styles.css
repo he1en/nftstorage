@@ -1,0 +1,18 @@
+.centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#main-input {
+    width: 600px;
+}
+
+#nft-image {
+    max-width:250px;
+    width:100%;
+}
+
+#nft-traits {
+    white-space: pre-wrap;
+}

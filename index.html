@@ -3,21 +3,40 @@
     <head>
         <script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
         <script src="main.js" type="module"></script>
-
+        <link rel="stylesheet" href="styles.css"></link>
     </head>
-    <body>
+    <body class="centered">
         <h1>Where does your NFT live?</h1>
-        <label htmlFor="main-input">Enter an OpenSea or LooksRare link to your NFT.</label>
-        <input id="main-input"/>
-        <button id="main-button" type="button">See the truth</button>
+        <label htmlFor="main-input"><b>Enter an OpenSea or LooksRare link to an Ethereum NFT.</b><br /> For inspiration, you can browse the most valuable NFTs <a href='https://opensea.io/rankings?chain=ethereum' target="_blank">here</a>.</label>
+        <input id="main-input" value="https://opensea.io/assets/ethereum/0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258/61223"/>
+        <button id="main-button" type="button">Query the blockchain</button>
         <br />
-        <img id="nft-image" style="max-width:400px;width:100%" hidden=true />
-        <div id="main-output">
-            <h3 id="nft-name"></h3>
-            <h2 id="nft-location"></h2>
-            <iframe id="nft-data"></iframe>
-            <br />
-            <h3 id="nft-changeable"></h3>
+        <div id="main-output" hidden="true">
+            <div class="centered">
+                <h1 id="nft-name"></h1>
+                <img id="nft-image" />
+            </div>
+            <div id="on-chain">
+                <hr />
+                <h2>What's stored on the Ethereum Blockchain</h2>
+                <div id="nft-owner"></div>
+                <div id="nft-location">That the URI for this NFT is <a id="nft-location-upper" target="_blank" />&46;</div>
+            </div>
+            That's it. The owner owns a link to a non-blockchain server.
+            <hr />
+            <div id="off-chain">
+                <h2>What's NOT stored on the blockchain, but instead at <a id="nft-location-lower" target="_blank" /></h2>
+                Everything about the NFT. Calling that URL returns:
+                <div id="nft-traits"></div>
+                <div id="nft-image-info">
+                    The <a id="nft-image-link" target="_blank" />URL after "image:"</a> is what determines where the NFT image is stored, and is where we retrieved the image at the top of the page.
+                </div>
+            </div>
+            <hr />
+            <div id="explanation">
+
+            </div>
+            <div id="nft-changeable"></div>
             <br />
             <a id="nft-source" target="_blank" />
         </div>

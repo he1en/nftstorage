@@ -5,21 +5,40 @@ async function readNFT() {
     const {contractAddress, tokenID} = parseMarketplaceLink(input);
     const nft = await getNFTInfo(contractAddress, tokenID);
 
-    document.getElementById("nft-name").innerHTML = `Your ${nft.name} NFT`;
-    document.getElementById("nft-location").innerHTML = `Its image is located at ${nft.imageURI}, not on the blockchain`;
-    document.getElementById("nft-data").src = queryableURL(nft.tokenURI);
+    document.getElementById("main-output").hidden = false;
+
+    // upper
+    document.getElementById("nft-name").innerHTML = `${nft.name} #${tokenID}`;
+    document.getElementById("nft-owner").innerHTML = `That this NFT is owned by the account ${nft.ownerAddr}`;
+    var nftLocUpper = document.getElementById("nft-location-upper");
+    nftLocUpper.innerHTML = nft.tokenURI;
+    nftLocUpper.href = queryableURL(nft.tokenURI);
+
+    // lower
+    document.getElementById("nft-traits").innerHTML = JSON.stringify(nft.tokenData, null, 4);
+    var nftLocLower = document.getElementById("nft-location-lower");
+    nftLocLower.innerHTML = nft.tokenURI;
+    nftLocLower.href = queryableURL(nft.tokenURI);
+    document.getElementById("nft-image-link").href = queryableURL(nft.imageURI);
+    document.getElementById("nft-image").src = queryableURL(nft.imageURI);
+
     if (nft.knownChangeable) {
-        document.getElementById("nft-changeable").innerHTML = `Also, according to the source code for this NFT, someone can change the above link at any time.\n`;
+        const text = `Further, according to the this NFT's contract's source code, someone can change the
+        URI for this NFT at any time by calling the function ${nft.changeFn}.
+        This means that on the Ethereum blockchain, the value ${nft.tokenURI} could be replaced with something
+        completely different without the NFT owner's permission, and all the information in the red section
+        could be completely replaced.`
+        document.getElementById("nft-changeable").innerHTML = text;
     } else {
-        document.getElementById("nft-changeable").hidden = false;
+        document.getElementById("nft-changeable").hidden = true;
     }
+
+    // extras
     var sourceLink = document.getElementById("nft-source");
-    sourceLink.innerHTML = "You can read the source code for this NFT here."
+    sourceLink.innerHTML = "You can read the source code for this NFT here to see this all for yourself."
     sourceLink.href = `https://etherscan.io/address/${contractAddress}#code`;
 
-    var image = document.getElementById("nft-image");
-    image.src = queryableURL(nft.imageURI);
-    image.hidden = false;
+
 }
 
 var input = document.getElementById("main-input");
@@ -73,6 +92,25 @@ const ABI = [
         "stateMutability": "view",
     },
     {
+        "name":"ownerOf",
+        "inputs": [
+            {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "type":"function",
+        "stateMutability": "view"
+    },
+    {
         "name": "setBaseURI",
         "inputs": [
             {
@@ -110,19 +148,31 @@ function parseMarketplaceLink(marketplaceLink) {
 
 
 function queryableURL(uri) {
-    if (!uri.startsWith('ipfs://')) {
-        return uri;
+    /*
+    Turns URIs into URLs that we can send GET requests to.
+
+    ifps:// URIs need to be wrapped with an IPFS gateway. I chose ipfs.io.
+
+    Many URLs with NFT metadata and images do not return friendly CORS response headers, so
+    I need to request them server side, from a simple CORS proxy I set up. ipfs.io returns
+    good cors response headers so no need to wrap with proxy.
+    */
+    if (uri.startsWith('ipfs://')) {
+        // ipfs.io returns good cors response headers so no need to wrap with proxy
+        return `https://ipfs.io/ipfs/${uri.slice(7)}`;
     }
-    return `https://ipfs.io/ipfs/${uri.slice(7)}`;
+    return `https://corsproxy.he1en.workers.dev/?${uri}`;
 }
 
 class NFT {
-    constructor(name, tokenURI, tokenData, imageURI, knownChangeable) {
+    constructor(name, tokenURI, tokenData, imageURI, ownerAddr, knownChangeable, changeFn) {
         this.name = name;
         this.tokenURI = tokenURI;
         this.tokenData = tokenData;
         this.imageURI = imageURI;
+        this.ownerAddr = ownerAddr;
         this.knownChangeable = knownChangeable;
+        this.changeFn = changeFn;
     }
 }
 
@@ -130,17 +180,19 @@ async function getNFTInfo(contractAddress, tokenID) {
     web3.eth.handleRevert = true;
     const contract = new web3.eth.Contract(ABI, contractAddress);
 
-
+    const ownerAddr = await contract.methods.ownerOf(tokenID).call()
     const name = await contract.methods.name().call()
-    console.log(`NFT Name: ${name}`);
-
+    // contract owner as well?
 
     var isChangeable = false;
     await contract.methods.setBaseURI('new_uri').estimateGas()
         .then(response => {console.log(response); response.json().then(data=>console.log(data));})
         .catch(err => {
             console.log(err);
-            if (err.message.includes('Only operator can call this method')) {
+            if (
+                err.message.includes('Only operator can call this method') ||
+                err.message.includes('Ownable: caller is not the owner')
+                ) {
                 isChangeable = true;
             }
         });
@@ -148,7 +200,7 @@ async function getNFTInfo(contractAddress, tokenID) {
     const tokenURI = await contract.methods.tokenURI(tokenID).call();
     const response = await fetch(queryableURL(tokenURI));
     const tokenData = await response.json();
-    const nft = new NFT(name, tokenURI, tokenData, tokenData.image, isChangeable);
+    const nft = new NFT(name, tokenURI, tokenData, tokenData.image, ownerAddr, isChangeable, 'setBaseURI');
     console.log(nft);
     return nft;
 }
