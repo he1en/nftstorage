@@ -1,18 +1,114 @@
+:root {
+    --desktop-font-size: 1.2rem/1.5;
+    --mobile-font-size: 1rem/1.4;
+    --text-color: #2d2d2d;
+    --link-color: darkblue;
+    --link-color-alt: blue;
+    --bad-color: #ffe6e6;
+    --good-color: #e6ffe6;
+}
+
 .centered {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
+#background {
+    width: 100%;
+    min-height: 100vh;
+}
+
+#content {
+    color: var(--text-color);
+    min-height: 100vh;
+    margin: 0 auto;
+    max-width: 75ch;
+    padding: 0 0.5rem;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+#content, input, button {
+    font: var(--desktop-font-size) -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto, Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+hr {
+    margin: 2rem;
+}
+
 #main-input {
-    width: 600px;
+    width: 100%;
+    max-width: 850px;
+    border-radius: 8px;
+    appearance: none;
+    border: 1px solid var(--text-color);
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.8rem;
+}
+input:focus, input:active { background-color: aliceblue; border-color: var(--link-color); }
+
+#main-button {
+    width: 200px;
+    font: var(--desktop-font-size);
+    border-radius: 8px;
+    border: 1px solid var(--text-color);
+    background-color: var(--good-color);
+    cursor: pointer;
+    box-shadow: 0 4px 4px 0 rgb(60 64 67 / 30%), 0 8px 12px 6px rgb(60 64 67 / 15%);
+}
+
+#enter-text {
+    margin-bottom: 0px;
+}
+
+#nft-name {
+    margin-bottom: 0;
 }
 
 #nft-image {
-    max-width:250px;
-    width:100%;
+    max-width: 250px;
+    width: 100%;
+    display: block;
+    height: auto;
+}
+
+.nft-content {
+    border-radius: 8px;
+    padding: 0 5px;
+}
+
+#on-chain {
+    background-color: var(--good-color);
+}
+
+#off-chain {
+    background-color: var(--bad-color);
 }
 
 #nft-traits {
     white-space: pre-wrap;
+}
+
+th {
+    vertical-align: top;
+    width: 30%;
+}
+
+table {
+    border-spacing: 1em;
+}
+
+#off-chain-heading, #nft-traits, #explanation, #nft-location-upper {
+    line-break: anywhere;
+}
+
+a,a:visited { color: var(--link-color); }
+a:hover,a:focus { color: var(--link-color-alt); }
+
+@media screen and (max-width: 75ch) {
+    body, input {
+        font: var(--mobile-font-size) -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto, Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
+    }
+    table { table-layout: auto; }
 }

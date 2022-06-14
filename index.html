@@ -5,40 +5,62 @@
         <script src="main.js" type="module"></script>
         <link rel="stylesheet" href="styles.css"></link>
     </head>
-    <body class="centered">
-        <h1>Where does your NFT live?</h1>
-        <label htmlFor="main-input"><b>Enter an OpenSea or LooksRare link to an Ethereum NFT.</b><br /> For inspiration, you can browse the most valuable NFTs <a href='https://opensea.io/rankings?chain=ethereum' target="_blank">here</a>.</label>
-        <input id="main-input" value="https://opensea.io/assets/ethereum/0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258/61223"/>
-        <button id="main-button" type="button">Query the blockchain</button>
-        <br />
-        <div id="main-output" hidden="true">
-            <div class="centered">
-                <h1 id="nft-name"></h1>
-                <img id="nft-image" />
-            </div>
-            <div id="on-chain">
-                <hr />
-                <h2>What's stored on the Ethereum Blockchain</h2>
-                <div id="nft-owner"></div>
-                <div id="nft-location">That the URI for this NFT is <a id="nft-location-upper" target="_blank" />&46;</div>
-            </div>
-            That's it. The owner owns a link to a non-blockchain server.
-            <hr />
-            <div id="off-chain">
-                <h2>What's NOT stored on the blockchain, but instead at <a id="nft-location-lower" target="_blank" /></h2>
-                Everything about the NFT. Calling that URL returns:
-                <div id="nft-traits"></div>
-                <div id="nft-image-info">
-                    The <a id="nft-image-link" target="_blank" />URL after "image:"</a> is what determines where the NFT image is stored, and is where we retrieved the image at the top of the page.
-                </div>
-            </div>
-            <hr />
-            <div id="explanation">
+    <body>
+        <div id="background">
+            <div id="content" class="centered">
+                <h1>Discover how an NFT is actually stored</h1>
+                <label htmlFor="main-input">
+                    <h3 id="enter-text">
+                        Enter an
+                        <a href="https://opensea.io/rankings?chain=ethereum" target="_blank">OpenSea</a>
+                        or
+                        <a href="https://looksrare.org/collections" target="_blank">LooksRare</a>
+                        link to an Ethereum NFT.
+                    </h3>
+                </label>
+                <input id="main-input" value="https://opensea.io/assets/ethereum/0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258/61223"/>
+                <button id="main-button" type="button">Query the blockchain</button>
 
-            </div>
-            <div id="nft-changeable"></div>
-            <br />
-            <a id="nft-source" target="_blank" />
-        </div>
+                <div id="main-output" hidden="true">
+
+                    <div class="centered">
+                        <label htmlFor="nft-image"><h2 id="nft-name"></h2></label>
+                        <img id="nft-image"></img>
+                    </div>
+
+                    <h2>What's stored on the Ethereum Blockchain</h2>
+                    <div class="nft-content" id="on-chain">
+                        <div id="nft-owner"></div>
+                        <div id="nft-location-upper"></div>
+                    </div>
+                    <br>
+                    <div>
+                        That's it. The owner owns a link to a non-blockchain server.
+                    </div>
+
+                    <br>
+
+                    <h2 id="off-chain-heading"></h2>
+                    <div>Basically, everything about the NFT! Calling that URL returns:</div>
+                    <div class="nft-content" id="off-chain">
+                        <div id="nft-traits"></div>
+                        <br>
+                    </div>
+                    <br>
+                    <div id="nft-image-info"></div>
+                    <br>
+                    <div id="explanation"></div>
+                    <div id="nft-changeable"></div>
+                    <br>
+                    <a id="nft-source" target="_blank"></a>
+
+                    <hr>
+
+                    <div class="centered">
+                        This website's code is open source on <a target="_blank" href="https://github.com/he1en/WhoOwnsNFT">Github</a>
+                    </div>
+                </div><!-- main output-->
+            </div><!-- content-->
+        </div><!-- background-->
     </body>
 </html>
