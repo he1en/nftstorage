@@ -23,7 +23,7 @@
     color: var(--text-color);
     min-height: 100vh;
     margin: 0 auto;
-    max-width: 75ch;
+    max-width: 85ch;
     padding: 0 0.5rem;
     overflow-wrap: break-word;
     word-wrap: break-word;
@@ -73,6 +73,10 @@ input:focus, input:active { background-color: aliceblue; border-color: var(--lin
     height: auto;
 }
 
+#nft-location-upper {
+    padding-top: 10px;
+}
+
 .nft-content {
     border-radius: 8px;
     padding: 0 5px;
@@ -86,6 +90,10 @@ input:focus, input:active { background-color: aliceblue; border-color: var(--lin
     background-color: var(--bad-color);
 }
 
+.token-uri {
+    line-break: anywhere;
+}
+
 #nft-traits {
     white-space: pre-wrap;
 }
@@ -97,10 +105,6 @@ th {
 
 table {
     border-spacing: 1em;
-}
-
-#off-chain-heading, #nft-traits, #explanation, #nft-location-upper {
-    line-break: anywhere;
 }
 
 a,a:visited { color: var(--link-color); }

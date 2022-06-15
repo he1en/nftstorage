@@ -1,9 +1,16 @@
 // ------------- DOM access ------------------
 async function readNFT() {
 
-    // query nft data
+    // validate input
     var input = document.getElementById("main-input").value;
-    validateInput(input);
+    if (!validateInput(input)) {
+        document.getElementById("error-output").hidden = false;
+        return;
+    } else {
+        document.getElementById("error-output").hidden = true;
+    }
+
+    // query nft data
     const {contractAddress, tokenID} = parseMarketplaceLink(input);
     const nft = await getNFTInfo(contractAddress, tokenID);
 
@@ -17,7 +24,7 @@ async function readNFT() {
 
 function URItoLink(uri) {
     const url = queryableURL(uri, false);
-    return `<a href=${url} target="_blank"><b>${uri}</b></a>`
+    return `<a class="token-uri" href=${url} target="_blank"><b>${uri}</b></a>`
 }
 
 
@@ -68,10 +75,10 @@ function buildExplanatorySection(nft, tokenID, contractAddress) {
     }
 
     if (nft.knownChangeable) {
-        explanationText += `\nFurther, according to the this NFT's contract's source code, someone can
+        explanationText += `<br><br>Further, according to the this NFT's contract's source code, someone can
         call the function <b>${nft.changeFn}</b> and replace the value ${URItoLink(nft.tokenURI)}
-        on the blockchain with something different. <b>Essentially, the owner of ${nft.name} #${tokenID}
-        only owns a link that could change at any time</b>.`
+        on the blockchain with a different link. <b>Essentially, the owner of ${nft.name} #${tokenID}
+        only owns a link that might change at any time</b>.`
     }
     document.getElementById("explanation").innerHTML = explanationText;
 
@@ -227,13 +234,12 @@ async function getNFTInfo(contractAddress, tokenID) {
 
     const ownerAddr = await contract.methods.ownerOf(tokenID).call()
     const name = await contract.methods.name().call()
-    // contract owner as well?
 
     var isChangeable = false;
     await contract.methods.setBaseURI('new_uri').estimateGas()
         .then(response => {console.log(response); response.json().then(data=>console.log(data));})
         .catch(err => {
-            console.log(err);
+            //console.log(err);
             if (
                 err.message.includes('Only operator can call this method') ||
                 err.message.includes('Ownable: caller is not the owner') ||
@@ -248,7 +254,7 @@ async function getNFTInfo(contractAddress, tokenID) {
     const response = await fetch(queryableURL(tokenURI, true));
     const tokenData = await response.json();
     const nft = new NFT(name, tokenURI, tokenData, tokenData.image, ownerAddr, isChangeable, 'setBaseURI');
-    console.log(nft);
+    //console.log(nft);
     return nft;
 }
 
