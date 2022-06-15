@@ -1,6 +1,9 @@
 // ------------- DOM access ------------------
 async function readNFT() {
 
+    // reset in case of errors
+    document.getElementById("main-output").hidden = true;
+
     // validate input
     var input = document.getElementById("main-input").value;
     if (!validateInput(input)) {
@@ -12,6 +15,9 @@ async function readNFT() {
 
     // query nft data
     const {contractAddress, tokenID} = parseMarketplaceLink(input);
+    if (handleCryptoPunks(contractAddress)) {
+        return;
+    }
     const nft = await getNFTInfo(contractAddress, tokenID);
 
     // build dom
@@ -19,8 +25,26 @@ async function readNFT() {
     buildOnChainSection(nft, tokenID);
     buildOffChainSection(nft);
     buildExplanatorySection(nft, tokenID, contractAddress);
-
+    document.getElementById("footer").hidden = false;
 }
+
+function handleCryptoPunks(contractAddress) {
+    /*
+    Feels weird to have such an edge case, but they really are a crazy
+    edge case that the marketplaces have to handle differently too. There's
+    nothing to query from the blockchain
+    */
+   if (contractAddress === "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb") {
+        document.getElementById("cryptopunks-output").hidden = false;
+        buildSource(contractAddress, "CryptoPunks");
+        document.getElementById("footer").hidden = false;
+        return true;
+    } else {
+        document.getElementById("cryptopunks-output").hidden = true;
+        return false;
+    }
+}
+
 
 function URItoLink(uri) {
     const url = queryableURL(uri, false);
@@ -30,7 +54,7 @@ function URItoLink(uri) {
 
 function buildOnChainSection(nft, tokenID) {
     document.getElementById("nft-name").innerHTML = `${nft.name} #${tokenID}`;
-    document.getElementById("nft-image").src = queryableURL(nft.imageURI, true);
+    document.getElementById("main-image").src = queryableURL(nft.imageURI, true);
 
     const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b>${nft.ownerAddr}</b>.`
     document.getElementById("nft-owner").innerHTML = ownerHTML;
@@ -38,6 +62,7 @@ function buildOnChainSection(nft, tokenID) {
     const locHTML = `The URI for <b>${nft.name} #${tokenID}</b> is ${URItoLink(nft.tokenURI)}.`;
     document.getElementById("nft-location-upper").innerHTML = locHTML;
 }
+
 
 function formatTraits(tokenDataJSON) {
     /*
@@ -55,6 +80,7 @@ function formatTraits(tokenDataJSON) {
     return `<table><tbody>${result}</tbody></table>`
 }
 
+
 function buildOffChainSection(nft) {
     const headerTxt = `What's NOT stored on the blockchain, but instead at ${URItoLink(nft.tokenURI)}:`;
     document.getElementById("off-chain-heading").innerHTML = headerTxt;
@@ -62,6 +88,14 @@ function buildOffChainSection(nft) {
     const traits = formatTraits(nft.tokenData);
     document.getElementById("nft-traits").innerHTML = traits;
 }
+
+
+function buildSource(contractAddress, name) {
+    var sourceLink = document.getElementById("nft-source");
+    sourceLink.innerHTML = `You can read the source code for ${name} here to see this for yourself.`;
+    sourceLink.href = `https://etherscan.io/address/${contractAddress}#code`;
+}
+
 
 function buildExplanatorySection(nft, tokenID, contractAddress) {
 
@@ -82,12 +116,9 @@ function buildExplanatorySection(nft, tokenID, contractAddress) {
     }
     document.getElementById("explanation").innerHTML = explanationText;
 
-    // extras
-    var sourceLink = document.getElementById("nft-source");
-    sourceLink.innerHTML = "You can read the source code for this NFT here to see this for yourself."
-    sourceLink.href = `https://etherscan.io/address/${contractAddress}#code`;
-
+    buildSource(contractAddress, nft.name);
 }
+
 
 var input = document.getElementById("main-input");
 input.addEventListener("keypress", function(event) {
@@ -171,11 +202,12 @@ const ABI = [
         "type": "function",
         "stateMutability":"nonpayable"
     }
-    // TODO: goblins, secureBaseUri, setBaseTokenURI, cryptopunks, updateProjectBaseURI, setMetadataURI contracts with many NFTs
+    // TODO: goblins, secureBaseUri, setBaseTokenURI, updateProjectBaseURI, setMetadataURI contracts with many NFTs
 ];
 
 
 function validateInput(input) {
+    // todo improve
     if (input.startsWith('https://opensea.io/assets/ethereum') ||
         input.startsWith('https://looksrare.org/collections')) {
             return true;
@@ -185,6 +217,7 @@ function validateInput(input) {
 
 
 function parseMarketplaceLink(marketplaceLink) {
+    // todo improve
     if (marketplaceLink.endsWith('/')) {
         marketplaceLink = marketplaceLink.substring(0, marketplaceLink.length - 1);
     }

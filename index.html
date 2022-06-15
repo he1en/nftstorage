@@ -30,7 +30,7 @@
 
                     <div class="centered">
                         <label htmlFor="nft-image"><h2 id="nft-name"></h2></label>
-                        <img id="nft-image"></img>
+                        <img id="main-image" class="nft-image"></img>
                     </div>
 
                     <h2>What's stored on the Ethereum Blockchain</h2>
@@ -58,14 +58,45 @@
                     <br>
                     <div id="explanation"></div>
                     <br>
-                    <a id="nft-source" target="_blank"></a>
+                </div><!-- main output-->
 
+                <div id="cryptopunks-output" hidden=true>
+                    <h2 id="nft-name">CryptoPunks</h2>
+                    <p>
+                        CryptoPunks are a special case NFT, since they were created before "NFT" was even a used term. The Ethereum
+                        blockchain stores owns each Cryptopunk. However, the images are not stored there, neither is a pointer or link
+                        to the images. They live at
+                        <a href="https://www.larvalabs.com/public/images/cryptopunks/punks.png" target="_blank">
+                            this link
+                        </a>
+                        in one giant file, also shown below. Stored on the blockchain is a hash
+                        of this image. That means if LarvaLabs, the owner of that link, changes the image, everyone will know that it
+                        changed! But a hash isn't enough information to know what the image looks like, so from looking at the CryptoPunks
+                        smart contract alone, you can't know what the images are. You just have to know where this image is to know
+                        what you own.
+                    </p>
+                    <p>
+                        Years later, LarvaLabs actually did
+                        <a target="_blank" href="https://etherscan.io/tx/0xc82aa34310c310463eb9fe7835471f7317ac4b5008034a78c93b2a8a237be228">
+                            publish the Punks images to the blockchain.
+                        </a>
+                        The Ethereum blockchain isn't good at storing large files, so this was only possible because the images are low
+                        resolution by design, and by using clever compression. It still
+                        <a target="_blank" href="https://etherscan.io/tx/0xc82aa34310c310463eb9fe7835471f7317ac4b5008034a78c93b2a8a237be228">
+                            cost $264 to publish them.
+                        </a>
+                        And since contracts are immutable, the original CryptoPunks contract has no reference to the new contract.
+                    </p>
+                    <img class="nft-image" src="https://www.larvalabs.com/public/images/cryptopunks/punks.png"></img>
+
+                </div> <!-- cryptopunks-output -->
+                <a id="nft-source" target="_blank"></a>
+                <div id="footer" hidden=true>
                     <hr>
-
                     <div class="centered">
                         This website's code is open source on <a target="_blank" href="https://github.com/he1en/WhoOwnsNFT">Github</a>
                     </div>
-                </div><!-- main output-->
+                </div>
             </div><!-- content-->
         </div><!-- background-->
     </body>
