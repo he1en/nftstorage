@@ -33,27 +33,18 @@ function buildOnChainSection(nft, tokenID) {
 }
 
 function formatTraits(tokenDataJSON) {
-    // force image element to the bottom for emphasis
-    // const imageElem = tokenDataJSON["image"];
-    // delete tokenDataJSON.image;
+    /*
+    Turn the NFT traits metadata json into a table.
+    Force the image element to the bottom for emphasis.
+    */
 
     const {image, ...rest} = tokenDataJSON;
-
     var result = ""
     for(var key of Object.keys(rest)) {
         const content = rest[key];
-        result += `<tr><th>${key}</th><td>${JSON.stringify(content, undefined, 2)}</td></tr>`
+        result += `<tr><th>${key}</th><td>${JSON.stringify(content, undefined, 2).replace(/\"/g, "")}</td></tr>`
     }
     result += `<tr><th>image</th><td>${URItoLink(image)}</td></tr>`
-
-    // var traits = JSON.stringify(tokenDataJSON, null, 4);
-    // traits = traits.replace(/\"/g, "");
-    // traits = traits.slice(1, traits.length - 1);  // cut off surrounding {} to look better
-
-    // traits = traits.slice(0, traits.length - 1) + ',' + '\n' + "    image: " + ;
-    // return traits;
-
-
     return `<table><tbody>${result}</tbody></table>`
 }
 
@@ -63,34 +54,26 @@ function buildOffChainSection(nft) {
 
     const traits = formatTraits(nft.tokenData);
     document.getElementById("nft-traits").innerHTML = traits;
-
-    const imageInfo = `The purple URL after "image" determines the NFT's image.
-    We used it to retrieve the image at the top of the page.`
-    document.getElementById("nft-image-info").innerHTML = imageInfo;
 }
 
 function buildExplanatorySection(nft, tokenID, contractAddress) {
 
-    var explanationText = `It is the <a target="_blank" href="https://eips.ethereum.org/EIPS/eip-721" t>accepted standard</a>
-    that the representation of an NFT on the blockchain is just a pointer to another URL which
+    var explanationText = `Why is it stored like this? It is the <a target="_blank" href="https://eips.ethereum.org/EIPS/eip-721">
+    accepted standard</a> that the representation of an NFT on the blockchain is just a pointer to another URL which
     stores the information about the NFT, including its image.`
-    if (!nft.tokenURI.includes('ipfs/')) {
+    if (!(nft.tokenURI.includes('/ipfs/') || nft.tokenURI.includes('ipfs://'))) {
         explanationText += ` Whoever owns the server behind ${URItoLink(nft.tokenURI)} can change the content
         stored there at any time. Everything above in the red box is subject to change without the NFT owner's
         permission.`
     }
-    document.getElementById("explanation").innerHTML = explanationText;
 
     if (nft.knownChangeable) {
-        const changeText = `<br>Further, according to the this NFT's contract's source code, someone can
+        explanationText += `\nFurther, according to the this NFT's contract's source code, someone can
         call the function <b>${nft.changeFn}</b> and replace the value ${URItoLink(nft.tokenURI)}
         on the blockchain with something different. <b>Essentially, the owner of ${nft.name} #${tokenID}
         only owns a link that could change at any time</b>.`
-        document.getElementById("nft-changeable").innerHTML = changeText;
-        document.getElementById("nft-changeable").hidden = false;
-    } else {
-        document.getElementById("nft-changeable").hidden = true;
     }
+    document.getElementById("explanation").innerHTML = explanationText;
 
     // extras
     var sourceLink = document.getElementById("nft-source");

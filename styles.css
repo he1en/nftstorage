@@ -92,7 +92,7 @@ input:focus, input:active { background-color: aliceblue; border-color: var(--lin
 
 th {
     vertical-align: top;
-    width: 30%;
+    width: 25%;
 }
 
 table {
