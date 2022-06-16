@@ -32,6 +32,10 @@
     font: var(--desktop-font-size) -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto, Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+#error-output {
+    color: red;
+}
+
 hr {
     margin: 2rem;
     width: 90%;

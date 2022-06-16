@@ -1,18 +1,17 @@
 // ------------- DOM access ------------------
 async function readNFT() {
-
-    // reset in case of errors
     resetAllHidden();
 
     // validate input
     var input = document.getElementById("main-input").value;
-    if (!validateInput(input)) {
+    const parsedInput = validateInput(input);
+    if (parsedInput === null) {
         document.getElementById("error-output").hidden = false;
         return;
     }
+    const {contractAddress, tokenID} = parsedInput.groups;
 
     // query nft data
-    const {contractAddress, tokenID} = parseMarketplaceLink(input);
     if (handleCryptoPunks(contractAddress)) {
         return;
     }
@@ -264,24 +263,8 @@ const ABI = [
 
 
 function validateInput(input) {
-    // todo improve
-    if (input.startsWith('https://opensea.io/assets/ethereum') ||
-        input.startsWith('https://looksrare.org/collections')) {
-            return true;
-    }
-    return false;
-}
-
-
-function parseMarketplaceLink(marketplaceLink) {
-    // todo improve
-    if (marketplaceLink.endsWith('/')) {
-        marketplaceLink = marketplaceLink.substring(0, marketplaceLink.length - 1);
-    }
-    const URLparts = marketplaceLink.split('/');
-    const tokenID = parseInt(URLparts[URLparts.length - 1]);
-    const contractAddress = URLparts[URLparts.length - 2];
-    return {tokenID, contractAddress};
+    const re = new RegExp('^(https://)?(opensea.io/assets/ethereum|looksrare.org/collections)/(?<contractAddress>.+)/(?<tokenID>[0-9]+)/?$');
+    return input.match(re);
 }
 
 
