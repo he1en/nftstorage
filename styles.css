@@ -22,9 +22,9 @@
 #content {
     color: var(--text-color);
     min-height: 100vh;
-    margin: 0 auto;
     max-width: 85ch;
-    padding: 0 0.5rem;
+    width: 100%;
+    padding: 0px 8px;
     overflow-wrap: break-word;
     word-wrap: break-word;
 }
@@ -42,8 +42,8 @@ hr {
 }
 
 #main-input {
-    width: 100%;
-    max-width: 850px;
+    width: 90%;
+    max-width: 100vw;
     border-radius: 8px;
     appearance: none;
     border: 1px solid var(--text-color);
@@ -86,19 +86,16 @@ input:focus, input:active { background-color: aliceblue; border-color: var(--lin
 
 .nft-content {
     border-radius: 8px;
-    padding: 0 5px;
+    padding: 0 8px;
 }
 
 #on-chain-content {
     background-color: var(--good-color);
+    padding: 8px 8px;
 }
 
 #off-chain-content {
     background-color: var(--bad-color);
-}
-
-.token-uri {
-    line-break: anywhere;
 }
 
 th {
@@ -109,22 +106,38 @@ th {
 table {
     border-spacing: 1em;
     white-space: pre-wrap;
-    line-break: anywhere;
 }
 
 a,a:visited { color: var(--link-color); }
 a:hover,a:focus { color: var(--link-color-alt); }
 
+.breakable {
+    line-break: anywhere;
+}
+
 body {
     /* Needed becomes sometimes on-chain svgs will override this */
     overflow-x: visible  !important;
     overflow-y: visible  !important;
+    margin: 0;
 }
 
+h1 {
+    line-height: 1em;
+}
+
+#footer {
+    margin-bottom: 64px;
+}
 
 @media screen and (max-width: 75ch) {
     body, input {
         font: var(--mobile-font-size) -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto, Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji", "Segoe UI Symbol";
     }
     table { table-layout: auto; }
+
+    #content {
+        max-width: 100vw;
+        box-sizing: border-box;
+    }
 }

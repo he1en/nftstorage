@@ -69,7 +69,7 @@ function handleCryptoPunks(contractAddress) {
 
 function URItoLink(uri) {
     const url = queryableURL(uri, false);
-    return `<a class="token-uri" href=${url} target="_blank"><b>${uri}</b></a>`
+    return `<a class="breakable" href=${url} target="_blank"><b>${uri}</b></a>`
 }
 
 function buildHeader(nft, tokenID) {
@@ -91,7 +91,7 @@ function buildHeader(nft, tokenID) {
 }
 
 function buildOnChainSection(nft, tokenID) {
-    const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b>${nft.ownerAddr}</b>.`
+    const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b class="breakable">${nft.ownerAddr}</b>.`
     document.getElementById("nft-owner").innerHTML = ownerHTML;
 
     const locHTML = `The URI for <b>${nft.name} #${tokenID}</b> is ${URItoLink(nft.tokenURI)}.`;
@@ -110,7 +110,7 @@ function formatTraits(tokenDataJSON) {
     var tableHTML = "";
     for(var key of Object.keys(rest)) {
         const content = rest[key];
-        tableHTML += `<tr><th>${key}</th><td>${JSON.stringify(content, undefined, 2).replace(/\"/g, "")}</td></tr>`;
+        tableHTML += `<tr><th>${key}</th><td class="breakable">${JSON.stringify(content, undefined, 2).replace(/\"/g, "")}</td></tr>`;
     }
     var imgContent;
     if (image.startsWith("data:image/svg+xml;base64,")) {
