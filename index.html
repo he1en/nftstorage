@@ -16,15 +16,15 @@
                         <a href="https://opensea.io/rankings?chain=ethereum" target="_blank">OpenSea</a>
                         or
                         <a href="https://looksrare.org/collections" target="_blank">LooksRare</a>
-                        link to an Ethereum NFT.
+                        link to an NFT.
                     </h3>
                 </label>
                 <input id="main-input" value="https://opensea.io/assets/ethereum/0x60e4d786628fea6478f785a6d7e704777c86a7c6/3288"/>
                 <button id="main-button" type="button">Query the blockchain</button>
                 <div id="error-output" hidden=true>
                     <br>
-                    Please enter a valid OpenSea or LooksRare NFT URL, including the token ID at the end. For inspiration, click the links above
-                    to browse the most valuable NFTs.
+                    Please enter a valid OpenSea or LooksRare URL to an Ethereum or Polygon NFT, including the token ID at the end.
+                    For inspiration, click the links above to browse the most valuable NFTs.
                 </div>
 
                 <div id="main-output" hidden=true>
@@ -32,7 +32,7 @@
                         <h2 id="nft-name"></h2>
                         <div id="main-image"></div>
                     </div>
-                    <h2>What's stored on the Ethereum Blockchain</h2>
+                    <h2 id="on-chain-heading"></h2>
                     <div class="nft-content" id="on-chain-content">
                         <div id="nft-owner"></div>
                         <div id="off-chain-nft-location"></div>

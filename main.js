@@ -3,34 +3,34 @@ async function readNFT() {
     resetAllHidden();
 
     // validate input
-    var input = document.getElementById("main-input").value;
-    const parsedInput = validateInput(input);
-    if (parsedInput === null) {
+    var rawInput = document.getElementById("main-input").value;
+    const input = validateInput(rawInput);
+    if (input === null) {
         document.getElementById("error-output").hidden = false;
         return;
     }
-    const {contractAddress, tokenID} = parsedInput.groups;
 
     // query nft data
-    if (handleCryptoPunks(contractAddress)) {
+    if (handleCryptoPunks(input.contractAddress)) {
         return;
     }
-    const nft = await getNFTInfo(contractAddress, tokenID);
+    const nft = await getNFTInfo(input.contractAddress, input.tokenID, input.chain);
 
     // build dom
     document.getElementById("main-output").hidden = false;
-    buildHeader(nft, tokenID);
+    document.getElementById("on-chain-heading").innerHTML = `What's stored on the ${input.chain} Blockchain`;
+    buildHeader(nft, input.tokenID);
     var traitsID;
     if (nft.onChain) {
         traitsID = "nft-on-chain-traits";
     } else {
-        buildOnChainSection(nft, tokenID);
+        buildOnChainSection(nft, input.tokenID);
         buildOffChainSection(nft);
         traitsID = "nft-off-chain-traits";
     }
     document.getElementById(traitsID).innerHTML = formatTraits(nft.tokenData);
     document.getElementById(traitsID).hidden = false;
-    buildExplanatorySection(nft, tokenID, contractAddress);
+    buildExplanatorySection(nft, input.tokenID, input.contractAddress, input.chain);
     document.getElementById("footer").hidden = false;
 }
 
@@ -131,15 +131,19 @@ function buildOffChainSection(nft) {
 }
 
 
-function buildSource(contractAddress, name) {
+function buildSource(contractAddress, name, chain) {
     var sourceLink = document.getElementById("nft-source");
     sourceLink.hidden = false;
     sourceLink.innerHTML = `You can read the source code for ${name} here to see this for yourself.`;
-    sourceLink.href = `https://etherscan.io/address/${contractAddress}#code`;
+    if (chain === "Ethereum") {
+        sourceLink.href = `https://etherscan.io/address/${contractAddress}#code`;
+    } else {
+        sourceLink.href = `https://polygonscan.com/address/${contractAddress}#code`;
+    }
 }
 
 
-function buildExplanatorySection(nft, tokenID, contractAddress) {
+function buildExplanatorySection(nft, tokenID, contractAddress, chain) {
 
     var explanationText;
     if (nft.onChain) {
@@ -155,7 +159,7 @@ function buildExplanatorySection(nft, tokenID, contractAddress) {
         explanationText = `Why is the NFT stored like this? It is the <a target="_blank" href="https://eips.ethereum.org/EIPS/eip-721">
         accepted standard</a> that the representation of an NFT on the blockchain is just a URL which points to where the
         information about the NFT, including its image, is stored. One reason for this is that it is incredibly expensive to store
-        content on the Ethereum blockchain.`
+        content on blockchains, especially the Ethereum blockchain.`
         if (!(nft.tokenURI.includes('/ipfs/') || nft.tokenURI.includes('ipfs://'))) {
             explanationText += ` But it means that whoever owns the server behind ${URItoLink(nft.tokenURI)} can change the
             content stored there at any time. Everything above in the red box is subject to change without the NFT owner's
@@ -172,7 +176,7 @@ function buildExplanatorySection(nft, tokenID, contractAddress) {
 
     document.getElementById("explanation").innerHTML = explanationText;
 
-    buildSource(contractAddress, nft.name);
+    buildSource(contractAddress, nft.name, chain);
 }
 
 
@@ -189,9 +193,6 @@ button.onclick = readNFT;
 
 
 // ----- Just Javascript ---------
-
-const ethProvider = 'https://cloudflare-eth.com';
-const web3 = new Web3(ethProvider);
 
 const ABI = [
     {
@@ -261,10 +262,28 @@ const ABI = [
     // TODO: goblins, secureBaseUri, setBaseTokenURI, updateProjectBaseURI, setMetadataURI contracts with many NFTs
 ];
 
+class parsedInput {
+    constructor(chain, contractAddress, tokenID) {
+        this.chain = chain;
+        this.contractAddress = contractAddress;
+        this.tokenID = tokenID;
+    }
+}
 
 function validateInput(input) {
-    const re = new RegExp('^(https://)?(opensea.io/assets/ethereum|looksrare.org/collections)/(?<contractAddress>.+)/(?<tokenID>[0-9]+)/?$');
-    return input.match(re);
+    const re = new RegExp('^(https://)?(?<chain>opensea.io/assets/ethereum|opensea.io/assets/matic|looksrare.org/collections)/(?<contractAddress>.+)/(?<tokenID>[0-9]+)/?$');
+    const match = input.match(re);
+    if (match === null) {
+        return null;
+    }
+    var chain;
+    if (match.groups.chain === "opensea.io/assets/matic") {
+        chain = "Polygon";
+    } else {
+        chain = "Ethereum";
+    }
+    return new parsedInput(chain, match.groups.contractAddress, match.groups.tokenID);
+
 }
 
 
@@ -302,7 +321,16 @@ class NFT {
     }
 }
 
-async function getNFTInfo(contractAddress, tokenID) {
+async function getNFTInfo(contractAddress, tokenID, chain) {
+    var provider;
+    if (chain === "Ethereum") {
+        provider = "https://cloudflare-eth.com";
+    } else if (chain === "Polygon") {
+        provider = "https://polygon-rpc.com";
+    } else {
+        assert(false, "Only Ethereum and Polygon supported");
+    }
+    const web3 = new Web3(provider);
     web3.eth.handleRevert = true;
     const contract = new web3.eth.Contract(ABI, contractAddress);
 
@@ -317,7 +345,8 @@ async function getNFTInfo(contractAddress, tokenID) {
             if (
                 err.message.includes('Only operator can call this method') ||
                 err.message.includes('Ownable: caller is not the owner') ||
-                err.message.includes('AccessControl')
+                err.message.includes('AccessControl') ||
+                err.message.includes('Only Admin')
                 ) {
                 isChangeable = true;
             }
@@ -336,5 +365,6 @@ async function getNFTInfo(contractAddress, tokenID) {
         onChain = false;
     }
     const nft = new NFT(name, tokenURI, tokenData, onChain, tokenData.image, ownerAddr, isChangeable, 'setBaseURI');
+    console.log(nft);
     return nft;
 }
