@@ -85,20 +85,16 @@ input:focus, input:active { background-color: aliceblue; border-color: var(--lin
     padding: 0 5px;
 }
 
-#on-chain {
+#on-chain-content {
     background-color: var(--good-color);
 }
 
-#off-chain {
+#off-chain-content {
     background-color: var(--bad-color);
 }
 
 .token-uri {
     line-break: anywhere;
-}
-
-#nft-traits {
-    white-space: pre-wrap;
 }
 
 th {
@@ -108,10 +104,19 @@ th {
 
 table {
     border-spacing: 1em;
+    white-space: pre-wrap;
+    line-break: anywhere;
 }
 
 a,a:visited { color: var(--link-color); }
 a:hover,a:focus { color: var(--link-color-alt); }
+
+body {
+    /* Needed becomes sometimes on-chain svgs will override this */
+    overflow-x: visible  !important;
+    overflow-y: visible  !important;
+}
+
 
 @media screen and (max-width: 75ch) {
     body, input {

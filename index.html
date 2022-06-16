@@ -8,7 +8,7 @@
     <body>
         <div id="background">
             <div id="content" class="centered">
-                <h1>Discover how an NFT is actually stored</h1>
+                <h1>See how an NFT is actually stored</h1>
                 <label htmlFor="main-input">
                     <h3 id="enter-text">
                         Enter an
@@ -27,37 +27,38 @@
                 </div>
 
                 <div id="main-output" hidden=true>
-
                     <div class="centered">
-                        <label htmlFor="nft-image"><h2 id="nft-name"></h2></label>
-                        <img id="main-image" class="nft-image"></img>
+                        <h2 id="nft-name"></h2>
+                        <div id="main-image"></div>
                     </div>
-
                     <h2>What's stored on the Ethereum Blockchain</h2>
-                    <div class="nft-content" id="on-chain">
+                    <div class="nft-content" id="on-chain-content">
                         <div id="nft-owner"></div>
-                        <div id="nft-location-upper"></div>
+                        <div id="off-chain-nft-location"></div>
+                        <div id="nft-on-chain-traits"></div>
                     </div>
                     <br>
-                    <div>
+                    <div id="thats-it">
                         That's it. The owner owns a link to somewhere off the blockchain.
                     </div>
 
-                    <br>
-
-                    <h2 id="off-chain-heading"></h2>
-                    <div>Basically, everything about the NFT! Calling that URL returns:</div>
-                    <div class="nft-content" id="off-chain">
-                        <div id="nft-traits"></div>
+                    <div id="off-chain">
                         <br>
-                    </div>
-                    <br>
-                    <div id="nft-image-info">
-                        The blue URL after "image" determines the NFT's image. We used it to retrieve the image at the top of the page.
+                        <h2 id="off-chain-heading"></h2>
+                        <div>Basically, everything about the NFT! Calling that URL returns:</div>
+                        <div class="nft-content" id="off-chain-content">
+                            <div id="nft-off-chain-traits"></div>
+                            <br>
+                        </div>
+                        <br>
+                        <div id="nft-image-info">
+                            The blue URL after "image" determines the NFT's image. We used it to retrieve the image at the top of the page.
+                        </div>
                     </div>
                     <br>
                     <div id="explanation"></div>
                     <br>
+
                 </div><!-- main output-->
 
                 <div id="cryptopunks-output" hidden=true>
@@ -90,6 +91,7 @@
                     <img class="nft-image" src="https://www.larvalabs.com/public/images/cryptopunks/punks.png"></img>
 
                 </div> <!-- cryptopunks-output -->
+
                 <a id="nft-source" target="_blank"></a>
                 <div id="footer" hidden=true>
                     <hr>
