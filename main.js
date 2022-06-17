@@ -11,10 +11,10 @@ async function readNFT() {
     }
 
     // query nft data
-    let nft;
     if (handleCryptoPunks(input.contractAddress)) {
         return;
     }
+    let nft;
     try {
         nft = await getNFTInfo(input.contractAddress, input.tokenID, input.chain);
     } catch {
@@ -174,9 +174,9 @@ function buildExplanatorySection(nft, tokenID, contractAddress, chain) {
             permission.`
         }
 
-        if (nft.knownChangeable) {
+        if (nft.setURIFn) {
             explanationText += `<br><br>Further, according to the this NFT's contract's source code, someone can
-            call the function <b>${nft.changeFn}</b> and replace the value ${URItoLink(nft.tokenURI)}
+            call the function <b>${nft.setURIFn}</b> and replace the value ${URItoLink(nft.tokenURI)}
             on the blockchain with a different link. <b>Essentially, the owner of ${nft.name} #${tokenID}
             only owns a link that might change at any time</b>.`
         }
@@ -218,8 +218,145 @@ button.onclick = readNFT;
 
 
 // ----- Just Javascript ---------
+class parsedInput {
+    constructor(chain, contractAddress, tokenID) {
+        this.chain = chain;
+        this.contractAddress = contractAddress;
+        this.tokenID = tokenID;
+    }
+}
 
-const ABI = [
+
+class NFT {
+    constructor(name, tokenURI, tokenData, onChain, imageURI, ownerAddr, setURIFn) {
+        this.name = name;
+        this.tokenURI = tokenURI;
+        this.tokenData = tokenData;
+        this.onChain = onChain;
+        this.imageURI = imageURI;
+        this.ownerAddr = ownerAddr;
+        this.setURIFn = setURIFn;
+    }
+}
+
+
+function validateInput(input) {
+    const re = new RegExp('^(https://)?(?<chain>opensea.io/assets/ethereum|opensea.io/assets/matic|looksrare.org/collections)/(?<contractAddress>.+)/(?<tokenID>[0-9]+)/?$');
+    const match = input.match(re);
+    if (match === null) {
+        return null;
+    }
+    let chain;
+    if (match.groups.chain === "opensea.io/assets/matic") {
+        chain = "Polygon";
+    } else {
+        chain = "Ethereum";
+    }
+    return new parsedInput(chain, match.groups.contractAddress, match.groups.tokenID);
+
+}
+
+
+function queryableURL(uri, shouldProxy) {
+    /*
+    Turns URIs into URLs that we can send GET requests to.
+
+    ifps:// URIs need to be wrapped with an IPFS gateway. I chose ipfs.io.
+
+    Many URLs with NFT metadata and images do not return friendly CORS response headers, so
+    I need to request them server side, from a simple CORS proxy I set up. ipfs.io returns
+    good cors response headers so no need to wrap with proxy.
+    */
+    if (uri.startsWith('ipfs://')) {
+        // ipfs.io returns good cors response headers so no need to wrap with proxy
+        return `https://ipfs.io/ipfs/${uri.slice(7)}`;
+    }
+    if (shouldProxy) {
+        return `https://corsproxy.he1en.workers.dev/?${uri}`;
+    }
+    return uri;
+}
+
+
+function getProvider(chain) {
+    if (chain === "Ethereum") {
+        return "https://cloudflare-eth.com";
+    } else if (chain === "Polygon") {
+        return "https://polygon-rpc.com";
+    } else {
+        assert(false, "Only Ethereum and Polygon supported");
+    }
+}
+
+async function getChangeable(contract) {
+    const knownChangeURIFns = [
+        "setBaseURI",
+        "setBaseTokenURI",
+        "setURIs",
+        "secureBaseUri",
+        "setMetadataURI",
+        "setMetadataURI",
+        "setURI",
+        "makegobblinhaveparts",
+        "makeSNAKhaveparts"
+    ]
+    for (var fnName of knownChangeURIFns) {
+        try {
+            await contract.methods[fnName]('new_uri').estimateGas();
+        } catch(err) {
+            if (
+                err.message.includes('Only operator can call this method') ||
+                err.message.includes('Ownable: caller is not the owner') ||
+                err.message.includes('AccessControl') ||
+                err.message.includes('Only Admin') ||
+                err.message.includes('unauthorized')
+                ) {
+                return fnName;
+            }
+        }
+    }
+    return null;
+}
+
+async function getNFTInfo(contractAddress, tokenID, chain) {
+    const web3 = new Web3(getProvider(chain));
+    web3.eth.handleRevert = true;
+    const contract = new web3.eth.Contract(partialABI, contractAddress);
+
+    let name, tokenURI, ownerAddr, tokenData, onChain;
+    try {
+        name = await contract.methods.name().call();
+    } catch {
+        name = "Unnamed NFT";
+    }
+    try {
+        // erc 721
+        tokenURI = await contract.methods.tokenURI(tokenID).call();
+        ownerAddr = await contract.methods.ownerOf(tokenID).call();
+        name = await contract.methods.name().call();
+    } catch {
+        // erc 1155
+        const templatetokenURI = await contract.methods.uri(tokenID).call();
+        tokenURI = templatetokenURI.replace("{id}", tokenID);
+        ownerAddr = null;  // ERC 1155 has no getOwner call
+    }
+    const setURIFn = await getChangeable(contract);
+
+    if (tokenURI.startsWith("data:application/json;base64,")) {
+        tokenData = JSON.parse(atob(tokenURI.slice("data:application/json;base64,".length)));
+        onChain = true;
+    } else {
+        const tokenResponse = await fetch(queryableURL(tokenURI, true));
+        tokenData = await tokenResponse.json();
+        onChain = false;
+    }
+
+    return new NFT(name, tokenURI, tokenData, onChain, tokenData.image, ownerAddr, setURIFn);
+}
+
+
+// ------- All ABI below here ---------
+const partialABI = [
     {
         "name": "name",
         "inputs": [],
@@ -253,7 +390,7 @@ const ABI = [
         "stateMutability": "view",
     },
     {
-        "name": "uri",
+        "name": "uri", // ERC-1155 tokens
         "inputs": [
             {
                 "internalType": "uint256",
@@ -290,6 +427,7 @@ const ABI = [
         "type":"function",
         "stateMutability": "view"
     },
+    // possible functions to set the base uri -- only one will be on the contract
     {
         "name": "setBaseURI",
         "inputs": [
@@ -302,132 +440,127 @@ const ABI = [
         "outputs": [],
         "type": "function",
         "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setBaseTokenURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setURIs",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "secureBaseUri",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setMetadataURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "makegobblinhaveparts",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "makeSNAKhaveparts",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setTemplateURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "updateProjectBaseURI",  //0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "projectid",
+                "type": "uint256"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
     }
-    // TODO: goblins, secureBaseUri, setBaseTokenURI, updateProjectBaseURI, setMetadataURI, setTemplateURI, setURI contracts with many NFTs
 ];
-
-class parsedInput {
-    constructor(chain, contractAddress, tokenID) {
-        this.chain = chain;
-        this.contractAddress = contractAddress;
-        this.tokenID = tokenID;
-    }
-}
-
-function validateInput(input) {
-    const re = new RegExp('^(https://)?(?<chain>opensea.io/assets/ethereum|opensea.io/assets/matic|looksrare.org/collections)/(?<contractAddress>.+)/(?<tokenID>[0-9]+)/?$');
-    const match = input.match(re);
-    if (match === null) {
-        return null;
-    }
-    var chain;
-    if (match.groups.chain === "opensea.io/assets/matic") {
-        chain = "Polygon";
-    } else {
-        chain = "Ethereum";
-    }
-    return new parsedInput(chain, match.groups.contractAddress, match.groups.tokenID);
-
-}
-
-
-function queryableURL(uri, shouldProxy) {
-    /*
-    Turns URIs into URLs that we can send GET requests to.
-
-    ifps:// URIs need to be wrapped with an IPFS gateway. I chose ipfs.io.
-
-    Many URLs with NFT metadata and images do not return friendly CORS response headers, so
-    I need to request them server side, from a simple CORS proxy I set up. ipfs.io returns
-    good cors response headers so no need to wrap with proxy.
-    */
-    if (uri.startsWith('ipfs://')) {
-        // ipfs.io returns good cors response headers so no need to wrap with proxy
-        return `https://ipfs.io/ipfs/${uri.slice(7)}`;
-    }
-    if (shouldProxy) {
-        return `https://corsproxy.he1en.workers.dev/?${uri}`;
-    }
-    return uri;
-}
-
-
-class NFT {
-    constructor(name, tokenURI, tokenData, onChain, imageURI, ownerAddr, knownChangeable, changeFn) {
-        this.name = name;
-        this.tokenURI = tokenURI;
-        this.tokenData = tokenData;
-        this.onChain = onChain;
-        this.imageURI = imageURI;
-        this.ownerAddr = ownerAddr;
-        this.knownChangeable = knownChangeable;
-        this.changeFn = changeFn;
-    }
-}
-
-function getProvider(chain) {
-    if (chain === "Ethereum") {
-        return "https://cloudflare-eth.com";
-    } else if (chain === "Polygon") {
-        return "https://polygon-rpc.com";
-    } else {
-        assert(false, "Only Ethereum and Polygon supported");
-    }
-}
-
-async function getChangeable(contract) {
-    try {
-        await contract.methods.setBaseURI('new_uri').estimateGas();
-        return false;
-    } catch(err) {
-        console.log(err);
-        if (
-            err.message.includes('Only operator can call this method') ||
-            err.message.includes('Ownable: caller is not the owner') ||
-            err.message.includes('AccessControl') ||
-            err.message.includes('Only Admin') ||
-            err.message.includes('unauthorized')
-            ) {
-            return true
-        }
-    }
-}
-
-async function getNFTInfo(contractAddress, tokenID, chain) {
-    const web3 = new Web3(getProvider(chain));
-    web3.eth.handleRevert = true;
-    const contract = new web3.eth.Contract(ABI, contractAddress);
-
-    let name, tokenURI, ownerAddr, tokenData, onChain;
-    try {
-        name = await contract.methods.name().call();
-    } catch {
-        name = "Unnamed NFT";
-    }
-    try {
-        // erc 721
-        tokenURI = await contract.methods.tokenURI(tokenID).call();
-        ownerAddr = await contract.methods.ownerOf(tokenID).call();
-        name = await contract.methods.name().call();
-    } catch {
-        // erc 1155
-        const templatetokenURI = await contract.methods.uri(tokenID).call();
-        tokenURI = templatetokenURI.replace("{id}", tokenID);
-        ownerAddr = null;  // ERC 1155 has no getOwner call
-    }
-    const isChangeable = getChangeable(contract);
-
-    if (tokenURI.startsWith("data:application/json;base64,")) {
-        tokenData = JSON.parse(atob(tokenURI.slice("data:application/json;base64,".length)));
-        console.log(tokenData);
-        onChain = true;
-    } else {
-        const tokenResponse = await fetch(queryableURL(tokenURI, true));
-        tokenData = await tokenResponse.json();
-        onChain = false;
-    }
-
-    const nft = new NFT(name, tokenURI, tokenData, onChain, tokenData.image, ownerAddr, isChangeable, 'setBaseURI');
-    console.log(nft);
-    return nft;
-}
