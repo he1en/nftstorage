@@ -34,6 +34,7 @@
 
 #error-output {
     color: darkred;
+    padding-top: 15px;
 }
 
 hr {

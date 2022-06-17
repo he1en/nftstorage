@@ -6,21 +6,27 @@ async function readNFT() {
     var rawInput = document.getElementById("main-input").value;
     const input = validateInput(rawInput);
     if (input === null) {
-        document.getElementById("error-output").hidden = false;
+        displayError(null);
         return;
     }
 
     // query nft data
+    let nft;
     if (handleCryptoPunks(input.contractAddress)) {
         return;
     }
-    const nft = await getNFTInfo(input.contractAddress, input.tokenID, input.chain);
+    try {
+        nft = await getNFTInfo(input.contractAddress, input.tokenID, input.chain);
+    } catch {
+        displayError(input.contractAddress, input.chain);
+        return;
+    }
 
     // build dom
     document.getElementById("main-output").hidden = false;
     document.getElementById("on-chain-heading").innerHTML = `What's stored on the ${input.chain} Blockchain`;
     buildHeader(nft, input.tokenID);
-    var traitsID;
+    let traitsID;
     if (nft.onChain) {
         traitsID = "nft-on-chain-traits";
     } else {
@@ -59,7 +65,7 @@ function handleCryptoPunks(contractAddress) {
     */
    if (contractAddress === "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb") {
         document.getElementById("cryptopunks-output").hidden = false;
-        buildSource(contractAddress, "CryptoPunks");
+        buildSource(contractAddress, "CryptoPunks", "Ethereum");
         document.getElementById("footer").hidden = false;
         return true;
     }
@@ -77,7 +83,7 @@ function buildHeader(nft, tokenID) {
     document.getElementById("nft-name").innerHTML = `${nft.name} #${tokenID}`;
 
     var imgElem = document.getElementById("main-image");
-    var imgContent;
+    let imgContent;
     if (nft.imageURI.startsWith("data:image/svg+xml;base64,")) {
         const content = atob(nft.imageURI.slice("data:image/svg+xml;base64,".length))
         imgElem.style.height = "100%";
@@ -91,8 +97,10 @@ function buildHeader(nft, tokenID) {
 }
 
 function buildOnChainSection(nft, tokenID) {
-    const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b class="breakable">${nft.ownerAddr}</b>.`
-    document.getElementById("nft-owner").innerHTML = ownerHTML;
+    if (!nft.ownerAddr === null) {
+        const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b class="breakable">${nft.ownerAddr}</b>.`
+        document.getElementById("nft-owner").innerHTML = ownerHTML;
+    }
 
     const locHTML = `The URI for <b>${nft.name} #${tokenID}</b> is ${URItoLink(nft.tokenURI)}.`;
     document.getElementById("off-chain-nft-location").innerHTML = locHTML;
@@ -112,13 +120,13 @@ function formatTraits(tokenDataJSON) {
         const content = rest[key];
         tableHTML += `<tr><th>${key}</th><td class="breakable">${JSON.stringify(content, undefined, 2).replace(/\"/g, "")}</td></tr>`;
     }
-    var imgContent;
+    let imgContent;
     if (image.startsWith("data:image/svg+xml;base64,")) {
         imgContent = image.slice(0, "data:image/svg+xml;base64,".length + 200) + "......";
     } else{
         imgContent = URItoLink(image);
     }
-    tableHTML += `<tr><th>image</th><td>${imgContent}</td></tr>`
+    tableHTML += `<tr><th>image</th><td class="breakable">${imgContent}</td></tr>`
     return `<table><tbody>${tableHTML}</tbody></table>`
 }
 
@@ -179,6 +187,23 @@ function buildExplanatorySection(nft, tokenID, contractAddress, chain) {
     buildSource(contractAddress, nft.name, chain);
 }
 
+function displayError(contractAddress, chain) {
+    var errorHTML;
+    if (contractAddress === null) {
+        // input error
+        errorHTML = "Please enter a valid OpenSea or LooksRare URL to an Ethereum or Polygon NFT, including the token ID at the end.";
+    } else {
+        buildSource(contractAddress, "this NFT", chain);
+        errorHTML = "Sorry, we couldn't get data about that NFT. It might not conform the accepted NFT ERC-721 or ERC-1155 standard."
+    }
+
+    errorHTML += " To find a valid NFT, you can click the links above to browse the most valuable NFTs."
+
+    var errorElem = document.getElementById("error-output");
+    errorElem.hidden = false;
+    errorElem.innerHTML = errorHTML;
+}
+
 
 var input = document.getElementById("main-input");
 input.addEventListener("keypress", function(event) {
@@ -228,6 +253,25 @@ const ABI = [
         "stateMutability": "view",
     },
     {
+        "name": "uri",
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "type": "function",
+        "stateMutability": "view",
+    },
+    {
         "name":"ownerOf",
         "inputs": [
             {
@@ -259,7 +303,7 @@ const ABI = [
         "type": "function",
         "stateMutability":"nonpayable"
     }
-    // TODO: goblins, secureBaseUri, setBaseTokenURI, updateProjectBaseURI, setMetadataURI contracts with many NFTs
+    // TODO: goblins, secureBaseUri, setBaseTokenURI, updateProjectBaseURI, setMetadataURI, setTemplateURI, setURI contracts with many NFTs
 ];
 
 class parsedInput {
@@ -321,40 +365,58 @@ class NFT {
     }
 }
 
-async function getNFTInfo(contractAddress, tokenID, chain) {
-    var provider;
+function getProvider(chain) {
     if (chain === "Ethereum") {
-        provider = "https://cloudflare-eth.com";
+        return "https://cloudflare-eth.com";
     } else if (chain === "Polygon") {
-        provider = "https://polygon-rpc.com";
+        return "https://polygon-rpc.com";
     } else {
         assert(false, "Only Ethereum and Polygon supported");
     }
-    const web3 = new Web3(provider);
+}
+
+async function getChangeable(contract) {
+    try {
+        await contract.methods.setBaseURI('new_uri').estimateGas();
+        return false;
+    } catch(err) {
+        console.log(err);
+        if (
+            err.message.includes('Only operator can call this method') ||
+            err.message.includes('Ownable: caller is not the owner') ||
+            err.message.includes('AccessControl') ||
+            err.message.includes('Only Admin') ||
+            err.message.includes('unauthorized')
+            ) {
+            return true
+        }
+    }
+}
+
+async function getNFTInfo(contractAddress, tokenID, chain) {
+    const web3 = new Web3(getProvider(chain));
     web3.eth.handleRevert = true;
     const contract = new web3.eth.Contract(ABI, contractAddress);
 
-    const ownerAddr = await contract.methods.ownerOf(tokenID).call()
-    const name = await contract.methods.name().call()
+    let name, tokenURI, ownerAddr, tokenData, onChain;
+    try {
+        name = await contract.methods.name().call();
+    } catch {
+        name = "Unnamed NFT";
+    }
+    try {
+        // erc 721
+        tokenURI = await contract.methods.tokenURI(tokenID).call();
+        ownerAddr = await contract.methods.ownerOf(tokenID).call();
+        name = await contract.methods.name().call();
+    } catch {
+        // erc 1155
+        const templatetokenURI = await contract.methods.uri(tokenID).call();
+        tokenURI = templatetokenURI.replace("{id}", tokenID);
+        ownerAddr = null;  // ERC 1155 has no getOwner call
+    }
+    const isChangeable = getChangeable(contract);
 
-    var isChangeable = false;
-    await contract.methods.setBaseURI('new_uri').estimateGas()
-        .then(response => {console.log(response); response.json().then(data=>console.log(data));})
-        .catch(err => {
-            console.log(err);
-            if (
-                err.message.includes('Only operator can call this method') ||
-                err.message.includes('Ownable: caller is not the owner') ||
-                err.message.includes('AccessControl') ||
-                err.message.includes('Only Admin')
-                ) {
-                isChangeable = true;
-            }
-        });
-
-    const tokenURI = await contract.methods.tokenURI(tokenID).call();
-    var tokenData;
-    var onChain;
     if (tokenURI.startsWith("data:application/json;base64,")) {
         tokenData = JSON.parse(atob(tokenURI.slice("data:application/json;base64,".length)));
         console.log(tokenData);
@@ -364,6 +426,7 @@ async function getNFTInfo(contractAddress, tokenID, chain) {
         tokenData = await tokenResponse.json();
         onChain = false;
     }
+
     const nft = new NFT(name, tokenURI, tokenData, onChain, tokenData.image, ownerAddr, isChangeable, 'setBaseURI');
     console.log(nft);
     return nft;
