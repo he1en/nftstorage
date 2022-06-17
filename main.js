@@ -14,15 +14,18 @@ async function readNFT() {
     if (handleCryptoPunks(input.contractAddress)) {
         return;
     }
+    document.getElementById("loading").innerHTML = `Querying the ${input.chain} Blockchain...`;
     let nft;
     try {
         nft = await getNFTInfo(input.contractAddress, input.tokenID, input.chain);
     } catch {
         displayError(input.contractAddress, input.chain);
+        document.getElementById("loading").innerHTML = "";
         return;
     }
 
     // build dom
+    document.getElementById("loading").innerHTML = "";
     document.getElementById("main-output").hidden = false;
     document.getElementById("on-chain-heading").innerHTML = `What's stored on the ${input.chain} Blockchain`;
     buildHeader(nft, input.tokenID);
