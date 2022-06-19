@@ -100,7 +100,7 @@ function buildHeader(nft, tokenID) {
 }
 
 function buildOnChainSection(nft, tokenID) {
-    if (!nft.ownerAddr === null) {
+    if (!(nft.ownerAddr === null)) {
         const ownerHTML = `<b>${nft.name} #${tokenID}</b> is owned by the account <b class="breakable">${nft.ownerAddr}</b>.`
         document.getElementById("nft-owner").innerHTML = ownerHTML;
     }
@@ -498,6 +498,19 @@ const partialABI = [
     },
     {
         "name": "setURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setTokenBaseURI",
         "inputs": [
             {
                 "internalType": "string",
