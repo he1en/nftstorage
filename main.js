@@ -291,31 +291,43 @@ function getProvider(chain) {
     }
 }
 
-async function getChangeable(contract) {
+
+async function getURIChangeFn(contract) {
+    /*
+    Query all known possibilities for a URI change function in parallel, and if
+    the error message reflects that the function exists but can only be called
+    by a privileged account, return it
+    */
+
     const knownChangeURIFns = [
         "setBaseURI",
+        "setBaseUri",
         "setBaseTokenURI",
+        "setTokenBaseURI",
+        "setTokenURI",
+        "setURI",
         "setURIs",
         "secureBaseUri",
         "setMetadataURI",
-        "setMetadataURI",
-        "setURI",
         "makegobblinhaveparts",
-        "makeSNAKhaveparts"
-    ]
-    for (var fnName of knownChangeURIFns) {
-        try {
-            await contract.methods[fnName]('new_uri').estimateGas();
-        } catch(err) {
-            if (
-                err.message.includes('Only operator can call this method') ||
-                err.message.includes('Ownable: caller is not the owner') ||
-                err.message.includes('AccessControl') ||
-                err.message.includes('Only Admin') ||
-                err.message.includes('unauthorized')
-                ) {
-                return fnName;
-            }
+        "makeSNAKhaveparts",
+        "setRevealedBaseURI"
+    ];
+    const fnPromises = knownChangeURIFns.map(async function(fnName) {
+        await contract.methods[fnName]('new_uri').estimateGas();
+    });
+    const responses = await Promise.allSettled(fnPromises);
+    for (var i = 0; i <knownChangeURIFns.length; i++) {
+        const res = responses[i];
+        if (res.status === 'rejected' && (
+                res.reason.message.includes('Only operator') ||
+                res.reason.message.includes('Ownable: caller is not the owner') ||
+                res.reason.message.includes('AccessControl') ||
+                res.reason.message.includes('Only Admin') ||
+                res.reason.message.includes('unauthorized')
+            )
+        ) {
+            return knownChangeURIFns[i];  // promise.allSettled retains order
         }
     }
     return null;
@@ -343,7 +355,7 @@ async function getNFTInfo(contractAddress, tokenID, chain) {
         tokenURI = templatetokenURI.replace("{id}", tokenID);
         ownerAddr = null;  // ERC 1155 has no getOwner call
     }
-    const setURIFn = await getChangeable(contract);
+    const setURIFn = await getURIChangeFn(contract);
 
     if (tokenURI.startsWith("data:application/json;base64,")) {
         tokenData = JSON.parse(atob(tokenURI.slice("data:application/json;base64,".length)));
@@ -550,6 +562,45 @@ const partialABI = [
     },
     {
         "name": "setTemplateURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setBaseUri",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setRevealedBaseURI",
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "uri",
+                "type": "string"
+            }
+        ],
+        "outputs": [],
+        "type": "function",
+        "stateMutability":"nonpayable"
+    },
+    {
+        "name": "setTokenURI",
         "inputs": [
             {
                 "internalType": "string",
